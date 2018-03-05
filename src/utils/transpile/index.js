@@ -7,7 +7,7 @@ export const generateElement = (
   errorCallback
 ) => {
   // NOTE: Workaround for classes, since buble doesn't allow `return` without a function
-  const transformed = transform(code)
+  const transformed = transform(`<React.Fragment>${code}</React.Fragment>`)
     .trim()
     .replace(/^var \w+ =/, '')
     .replace(/;$/, '')
