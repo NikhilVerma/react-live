@@ -1,20 +1,22 @@
 import React, { Component } from 'react'
 import cn from '../../utils/cn'
 import prism from '../../utils/prism'
-import getIndent from '../../utils/getIndent'
 import normalizeCode from '../../utils/normalizeCode'
 import normalizeHtml from '../../utils/normalizeHtml'
 import htmlToPlain from '../../utils/htmlToPlain'
 import selectionRange from '../../vendor/selection-range'
+import { getIndent, getDeindentLevel } from '../../utils/getIndent'
 
 class Editor extends Component {
   static defaultProps = {
-    contentEditable: true
+    contentEditable: true,
+    language: 'jsx'
   }
 
   undoStack = []
   undoOffset = 0
   undoTimestamp = 0
+  compositing = false
 
   state = {
     html: ''
@@ -65,7 +67,10 @@ class Editor extends Component {
   }
 
   updateContent = plain => {
-    this.setState({ html: prism(plain) })
+    if (this.compositing) {
+      return;
+    }
+    this.setState({ html: prism(plain, this.props.language) })
 
     if (this.props.onChange) {
       this.props.onChange(plain)
@@ -102,13 +107,30 @@ class Editor extends Component {
     if (this.props.onKeyDown) {
       this.props.onKeyDown(evt)
     }
+
     if (evt.keyCode === 9 && !this.props.ignoreTabKey) { // Tab Key
-      document.execCommand('insertHTML', false, '&#009')
+      document.execCommand('insertHTML', false, '  ')
+      evt.preventDefault()
+    } else if (evt.keyCode === 8) { // Backspace Key
+      const { start: cursorPos, end: cursorEndPos } = selectionRange(this.ref)
+      if (cursorPos !== cursorEndPos) {
+        return // Bail on selections
+      }
+
+      const deindent = getDeindentLevel(this.getPlain(), cursorPos)
+      if (deindent <= 0) {
+        return // Bail when deindent level defaults to 0
+      }
+
+      // Delete chars `deindent` times
+      for (let i = 0; i < deindent; i++) {
+        document.execCommand('delete', false)
+      }
+
       evt.preventDefault()
     } else if (evt.keyCode === 13) { // Enter Key
       const { start: cursorPos } = selectionRange(this.ref)
       const indentation = getIndent(this.getPlain(), cursorPos)
-
       document.execCommand('insertHTML', false, '\n' + indentation)
       evt.preventDefault()
     } else if (
@@ -156,10 +178,24 @@ class Editor extends Component {
       const plain = this.getPlain()
 
       this.recordChange(plain, this.selection)
-      this.updateContent(plain)
+      this.updateContent(plain);
     } else {
       this.undoTimestamp = 0
     }
+  }
+
+  onCompositionStart = evt => {
+    if (this.props.onCompositionStart) {
+      this.props.onCompositionStart(evt)
+    }
+    this.compositing = true;
+  }
+
+  onCompositionEnd = evt => {
+    if (this.props.onCompositionEnd) {
+      this.props.onCompositionEnd(evt)
+    }
+    this.compositing = false;
   }
 
   onClick = evt => {
@@ -171,7 +207,7 @@ class Editor extends Component {
   }
 
   componentWillMount() {
-    const html = prism(normalizeCode(this.props.code))
+    const html = prism(normalizeCode(this.props.code), this.props.language)
     this.setState({ html })
   }
 
@@ -180,9 +216,9 @@ class Editor extends Component {
     this.undoTimestamp = 0 // Reset timestamp
   }
 
-  componentWillReceiveProps({ code }) {
-    if (code !== this.props.code) {
-      const html = prism(normalizeCode(code))
+  componentWillReceiveProps({ code, language }) {
+    if (code !== this.props.code || language !== this.props.language) {
+      const html = prism(normalizeCode(code), language)
       this.setState({ html })
     }
   }
@@ -195,9 +231,16 @@ class Editor extends Component {
   }
 
   render() {
-    const { contentEditable, className, style, ...rest } = this.props
+    const {
+      contentEditable,
+      className,
+      style,
+      code, // ignored & unused
+      ignoreTabKey, // ignored & unused
+      language, // ignored & unused
+      ...rest
+    } = this.props
     const { html } = this.state
-    delete rest.code
 
     return (
       <pre
@@ -205,10 +248,13 @@ class Editor extends Component {
         ref={this.onRef}
         className={cn('prism-code', className)}
         style={style}
+        spellCheck="false"
         contentEditable={contentEditable}
-        onKeyDown={contentEditable && this.onKeyDown}
-        onKeyUp={contentEditable && this.onKeyUp}
-        onClick={contentEditable && this.onClick}
+        onCompositionEnd={contentEditable ? this.onCompositionEnd : undefined}
+        onCompositionStart={contentEditable ? this.onCompositionStart : undefined}
+        onKeyDown={contentEditable ? this.onKeyDown : undefined}
+        onKeyUp={contentEditable ? this.onKeyUp : undefined}
+        onClick={contentEditable ? this.onClick : undefined}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     )

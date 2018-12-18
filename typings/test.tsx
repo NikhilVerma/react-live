@@ -2,15 +2,22 @@ import { LiveProvider, Editor, LiveEditor, LiveError, LivePreview, withLive } fr
 import * as React from 'react';
 
 export const providerC = (
-  <LiveProvider code={``} className="" scope="" mountStylesheet={false} noInline={false}/>
+  <LiveProvider
+    code="code"
+    className="class"
+    scope={{ Component: React.Component }}
+    transformCode={(code: string): string => code + ';;'}
+    mountStylesheet={false}
+    noInline={false}
+  />
 );
 
 export const editorC = (
-  <Editor/>
+  <Editor ignoreTabKey={false} />
 )
 
 export const liveEditorC = (
-  <LiveEditor/>
+  <LiveEditor onChange={(code: string) => {}}/>
 );
 
 export const liveErrorC = (

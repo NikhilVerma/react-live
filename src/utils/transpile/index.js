@@ -6,15 +6,16 @@ export const generateElement = (
   { code = '', scope = {} },
   errorCallback
 ) => {
-  // NOTE: Workaround for classes, since buble doesn't allow `return` without a function
-  const transformed = transform(`<React.Fragment>${code}</React.Fragment>`)
-    .trim()
-    .replace(/^var \w+ =/, '')
-    .replace(/;$/, '')
+
+  // NOTE: Remove trailing semicolon to get an actual expression.
+  const codeTrimmed = `<React.Fragment>${code}</React.Fragment>`.trim().replace(/;$/, '')
+
+  // NOTE: Workaround for classes and arrow functions.
+  const transformed = transform(`(${codeTrimmed})`).trim()
 
   return errorBoundary(
     evalCode(
-      `return (${transformed})`,
+      `return ${transformed}`,
       scope
     ),
     errorCallback

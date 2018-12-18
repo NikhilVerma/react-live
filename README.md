@@ -37,7 +37,7 @@ import {
 
 ## Demo
 
-[https://react-live-demo.philpl.com/](https://react-live-demo.philpl.com/)
+[https://react-live.philpl.com/](https://react-live.philpl.com/)
 
 ## FAQ
 
@@ -74,7 +74,30 @@ class Example extends React.Component {
 }
 ```
 
-But you can of course pass more things to this scope, that will be available as variables in the code.
+But you can of course pass more things to this scope, that will be available as variables in the code. Here's an example using [styled components](https://github.com/styled-components/styled-components):
+
+```js
+import styled from 'styled-components';
+
+const headerProps = { text: 'I\'m styled!' };
+
+const scope = {styled, headerProps};
+
+const code = `
+  const Header = styled.div\`
+    color: palevioletred;
+    font-size: 18px;
+  \`
+
+  render(<Header>{headerProps.text}</Header>)
+`
+
+<LiveProvider code={code} scope={scope} noInline={true}>
+  <LiveEditor />
+  <LiveError />
+  <LivePreview />
+</LiveProvider>
+```
 
 ## API
 
@@ -89,6 +112,7 @@ It supports these props, while passing all others through to a `<div />`:
 |scope|PropTypes.object|Accepts custom globals that the `code` can use
 |mountStylesheet|PropTypes.bool|Mounts the stylesheet for the prism editor (Default: `true`)
 |noInline|PropTypes.bool|Doesn’t evaluate and mount the inline code (Default: `false`)
+|transformCode|PropTypes.func|Accepts and returns the code to be transpiled, affording an opportunity to first transform it.
 
 Apart from these props it attaches the `.react-live` CSS class to its `div`.
 All subsequent components must be rendered inside a provider, since they communicate
@@ -111,7 +135,7 @@ It accepts these props for styling:
 |className|PropTypes.string|An additional class that is added to the Content Editable
 |ignoreTabKey|PropTypes.bool|Makes the editor ignore tab key presses so that keyboard users can tab past the editor without getting stuck
 |style|PropTypes.object|Additional styles for the Content Editable
-|onChange|PropTypes.function|Accepts a callback that is called when the user makes changes
+|onChange|PropTypes.func|Accepts a callback that is called when the user makes changes
 
 This component renders a Prism.js editor underneath it and also renders all of Prism’s
 styles inside a `style` tag.
@@ -153,9 +177,18 @@ desired behaviour.
 
 ## Comparison to [component-playground](https://github.com/FormidableLabs/component-playground)
 
-Component Playground is a similar but different project, that builds on babel-standalone and thus
-comes with a bigger bundle size. It comes with support for automatic documentation based on PropTypes
-and an ES6 console. Use it in projects where the page doesn’t have to load quickly, or even where it’s
-not user-facing, and correctness (Babel) and the additional features are more important than
-a lean bundle.
+There are multiple options when it comes to live, editable React component environments. Formidable actually has **two** first class projects to help you out: [`component-playground`](https://github.com/FormidableLabs/component-playground) and [`react-live`](https://github.com/FormidableLabs/react-live). Let's briefly look at the libraries, use cases, and factors that might help in deciding which is right for you.
 
+Here's a high-level decision tree:
+
+- If you want **fast and easy** setup and integration, then `component-playground` may be the ticket!
+- If you want **a smaller bundle**, **SSR**, and **more flexibility**, then `react-live` is for you!
+
+Here are the various factors at play:
+
+- **Build**: `component-playground` uses `babel-standalone`, `react-live` uses `bublé`. (_Note_: `react-live` might make transpiler customizable in the future).
+- **Bundle size**: `component-playground` has a larger bundle, but uses a more familiar editor setup. `react-live` is smaller, but more customized editor around `prism`.
+- **Ease vs. flexibility**: `react-live` is more modular/customizable, while `component-playground` is easier/faster to set up.
+- **SSR**: `component-playground` is not server-side renderable, `react-live` is.
+- **Extra features**: `component-playground` supports raw evaluation and pretty-printed output out-of-the-box, while `react-live` does not.
+- **Error handling**: `component-playground` might have more predictable error handling than `react-live` in some cases (due to `react-dom`, although this might change with React 16).
