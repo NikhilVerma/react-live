@@ -13282,7 +13282,9 @@ var transform$$1 = (function (code) {
 });
 
 var errorBoundary = function errorBoundary(Element, errorCallback) {
-  return function (_React$Component) {
+  var _class, _temp;
+
+  return _temp = _class = function (_React$Component) {
     inherits(ErrorBoundary, _React$Component);
 
     function ErrorBoundary() {
@@ -13299,7 +13301,7 @@ var errorBoundary = function errorBoundary(Element, errorCallback) {
     };
 
     return ErrorBoundary;
-  }(React.Component);
+  }(React.Component), _class.originalElement = Element, _temp;
 };
 
 var evalCode = function evalCode(code, scope) {
